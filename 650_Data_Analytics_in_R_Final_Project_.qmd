@@ -1,0 +1,417 @@
+---
+title: 'DTSC 650: Data Analytics In R'
+subtitle: 'CodeGrade Final Project Part 2'
+output: html_notebook
+editor_options:
+  chunk_output_type: inline
+---
+
+## Student Info
+
+```         
+Name: Emily Williams
+Term: Fall 1, 2023
+Date: October 1, 2023
+```
+
+------------------------------------------------------------------------
+
+## General Instructions
+
+------------------------------------------------------------------------
+
+### Name of File
+
+Name your assignment file **`BRFSS_Part2`**. This is a quarto "markdown" file, which has the file has the extension '.qmd'.
+
+------------------------------------------------------------------------
+
+### Instructions
+
+For the final section, you will choose four variables to explore in ways we have not in Q1-Q9. You will choose one of those four variables as the response variable and the other three as predictors. With those variables, complete the following. Be sure to read through all of the instructions for Q10-Q14 before choosing your 4 variables. Feel free to create multiple variables for Q12, Q13, and Q14, e.g. Q12a, Q12b, etc. Please make it clear, though, the distinction between each question/problem with comments and spacing. If you use Q12a, b, etc., be sure to print the results by doing Q12a or print(Q12a). Your answers must be clearly identifiable. Take time to tidy your code once you are finished. The easier it is for us to understand, the more partial credit you could receive.
+
+------------------------------------------------------------------------
+
+### Allowable packages
+
+Allowable packages are `tidyverse`, `caret`, `Hmisc`, `lsr`, `olsrr`, `psych`, `lm.beta`.
+
+-   If the allowable packages are not installed on your local computer, you'll need to do a one-time installation *from the Console Window in RStudio* for each package like this:\
+    **`install.packages('<package name>')`**\
+    *Do not attempt to install packages in code that you submit to CodeGrade.*
+
+-   Note: installing the entire tidyverse with `install.packages('tidyverse')` from the Console Window will save you from having to install any of the tidyverse's individual packages in the future.
+
+-   In your code, load the package's library like this: **`library(<library name>)`**
+
+------------------------------------------------------------------------
+
+### Do / Do not
+
+-   Do use tidyverse functions (dplyer verbs) for all of the questions where possible.
+
+-   Do use The Pipe.
+
+-   Do use plenty of comments throughout your code so that the grader can follow your line of thinking.
+
+-   Do not rearrange dataframe outputs unless specified by the question instructions.
+
+-   Do not create multiple copies of the BRFSS dataset in your script. Creating too many copies of the dataset can cause CodeGrade to crash with exit code -9. If you see that error on your Practice Submission, please check for this.
+
+------------------------------------------------------------------------
+
+### Data Set
+
+-   These data come from [Kaggle](https://www.kaggle.com/cdc/behavioral-risk-factor-surveillance-system).
+
+-   To answer these questions you will need to use the codebook on Brightspace, called `codebook15_llcp.pdf`. Please note that not all of the variables listed in the codebook are included in the .csv file to be downloaded from Brightspace.
+
+-   Download the `BRFSS2015_650.csv` file from Brightspace and place it in the same folder/directory as your script file. Then in RStudio, set your Working Directory to your Source File location: in the menus choose Session \| Set Working Directory \| To Source File Location. You most likely will see some warnings after it loads due to the fact that `read_csv()` will try to guess the column type but because there are so many rows it won't read enough of them to accurately make a guess.
+
+-   You must use the `read_csv()` function when loading the .csv file. Do not use read.csv().
+
+-   Do not rename the .csv file that you download from Brightspace.
+
+-   Do not edit the .csv file.
+
+------------------------------------------------------------------------
+
+### Pipe Notation
+
+You may use the `tidyverse` pipe **`%>%`** or the new base R pipe **`|>`**. See [here](https://www.tidyverse.org/blog/2023/04/base-vs-magrittr-pipe/) for a comparison.
+
+You are expected to use pipe notation in all of the CodeGrade assignments. Although there are alternate ways to filter, subset, and summarize data sets, using the pipe creates more readable code and is an important skill to develop.
+
+------------------------------------------------------------------------
+
+### Rounding requirement
+
+Round all float/dbl values to two decimal places.
+
+------------------------------------------------------------------------
+
+### Dataframe vs. Tibble
+
+Typically, in CodeGrade assignments, we expect output to be dataframes, not tibbles, unless otherwise noted.
+
+------------------------------------------------------------------------
+
+## Questions and Coded Solutions
+
+------------------------------------------------------------------------
+
+### Preliminaries
+
+```{r}
+### It's always a good idea when working in RStudio to start with a clean environment. 
+### Clear objects from the environment memory that may be leftover from previous 
+###   versions of your code or other assignments by running the following line:
+rm(list = ls())
+
+### Load the libraries you need
+
+library(tidyverse) 
+
+
+
+
+
+### Load the Data
+### Load the data file
+brf <- read_csv("BRFSS2015_650.csv")
+
+```
+
+------------------------------------------------------------------------
+
+## Questions
+
+------------------------------------------------------------------------
+
+### Q10
+
+Address the values of each of the variables (use the codebook for this and include your answer as comments). For instance, is "none" equal to a value other than 0? Are there extra decimals implied? Are there other values that should be excluded based on the responses they represent? Which variable will you seek to predict from the other variables? Explain in your comments. Update the dataset you will use for the remainder of the problems to account for these values.
+
+```{r}
+### Do not edit the followping line. It is used by CodeGrade.
+# CG Q10 # 
+
+### TYPE YOUR CODE BELOW ###
+
+# Which variable will you seek to predict from the other variables? Explain in your comments.  
+
+# This project will seek to predict physical health (PHSYHLTH - "How many days during the past 30 days was your physical health not good?) from weight (WEIGHT2), employment status (EMPLOY1), and health care coverage (HLTHPLN1). 
+
+
+project_data <- brf |> 
+  # select four variables for analysis
+  select(PHYSHLTH, EMPLOY1, WEIGHT2, HLTHPLN1) |> 
+  
+   # replace code for 0 days of poor PHYSHLTH (88) with the number 0
+   mutate(PHYSHLTH = ifelse(PHYSHLTH == 88, 0, PHYSHLTH)) |> 
+          
+    # remove values that represented "I don't know" and "Refused" from the numeric variables - PHYSHLTH and WEIGHT2. 
+  filter(
+    PHYSHLTH <= 30, # exclude 77, 99
+    WEIGHT2 < 7777,  # exclude 7777, 9997
+    EMPLOY1 < 9, # exclude 9
+    HLTHPLN1 < 3) |>  # exclude 7, 9
+  
+  mutate(
+     # convert WEIGHT2 values report in kilos to poundsunits (same unit)
+   WEIGHT2 = ifelse(WEIGHT2 > 7777, round((WEIGHT2 - 9000) * 0.453592, 2), round(WEIGHT2, 2))) |>  
+   
+  as.data.frame()
+
+# evaluate NAs in new dataset
+# NO need to remove NAs
+#eval_NA <- project_data |> 
+  #is.na() |> 
+  # sum()
+
+
+```
+
+### Q11
+
+Remove any outliers for each applicable variable. Make sure you are updating the dataset from Q10 and using this dataset for the remainder of the problems. Briefly explain why you chose the method you used. Make sure to comment it out.
+
+```{r}
+### Do not edit the following line. It is used by CodeGrade.
+# CG Q11 # 
+
+### TYPE YOUR CODE BELOW ###
+
+#EVALUATE PHYSHLTH for outliers
+table(project_data$PHYSHLTH)
+hist(project_data$PHYSHLTH)
+# this variable is filtered for values between 0 days and 30 days. 
+# Conclusion: No Outliers to remove
+
+#EVALUATE WEIGHT2 for outliers
+boxplot(project_data$WEIGHT2)
+summary(project_data$WEIGHT2)
+#boxplot and summary indicate outlying values. Min is 13.15 and Max is 2099.  These values are very extreme for an adult weight in pounds. 
+
+weight_upper <- quantile(project_data$WEIGHT2, 0.9985, na.rn = TRUE)
+weight_upper  # at 506 pounds, weight is at the .9985 percentile
+
+weight_lower <- quantile(project_data$WEIGHT2, 0.0015, na.rn = TRUE)
+weight_lower# at 90 pounds, weight is at the .0015 percentile
+
+#Conclusion: Remove weight outliers that are above weight_upper and below weight_lower
+
+#EVALUATE EMPLOY1 for outliers
+table(project_data$EMPLOY1)
+hist(project_data$EMPLOY1)
+# This is a categorical variable with values represented the code responses.
+# Conclusion: No outliers to remove
+
+#EVALUATE HLTHPLNa for outliers
+table(project_data$HLTHPLN1)
+barplot(table(project_data$HLTHPLN1))
+# This is a binary variable with Y/N values represented the code responses.
+# Conclusion: No outliers to remove
+
+# Remove outliers for WEIGHT2 from dataset.
+project_data_no_outliers <- project_data |> 
+  filter(WEIGHT2 < weight_upper & WEIGHT2 > weight_lower)
+
+```
+
+### Q12
+
+Complete exploratory analyses (for each variable) doing appropriate visualizations with ggplot2. Provide a discussion of your observations with comments
+
+```{r}
+### Do not edit the following line. It is used by CodeGrade.
+# CG Q12 # 
+
+### TYPE YOUR CODE BELOW ###
+
+#Exploratory analysis of PHYSHLTH
+ggplot(project_data_no_outliers, aes(x = PHYSHLTH)) + 
+  geom_bar() + 
+  labs(title = "PHSHLTH Frequency")
+
+ggplot(project_data_no_outliers, aes(x = PHYSHLTH)) + 
+  geom_boxplot() + 
+  labs(title = "PHSHLTH Boxplot")
+
+# The bar chart visualization reveals that the vast majority of values are 0, representing no days of poor health.  30 days is the second most frequent value.  This represents 30 or every day in the month with poor health.  
+# The boxplot, although a little strange in this situation, indicates that the values above 7 or 8 are very unusual.  And nearly all values are 0 or near 0.
+# *Although I have already removed outliers for this variable, I am wondering if I need to do more to address these high values moving forward. 
+
+
+#Exploratory analysis ofWEIGHT1
+ggplot(project_data_no_outliers, aes(x = WEIGHT2)) + 
+  geom_histogram() + 
+  labs(title = "WEIGHT2 Histogram")
+
+ggplot(project_data_no_outliers, aes(x = WEIGHT2)) + 
+  geom_boxplot() + 
+  labs(title = "WEIGHT2 Boxplot")
+# The visualizations reveal a positively skewed distribution with a more pronounced tail on the right side. There are high weight values that are making the distribution asymmetrical. However, the majority of the weight values are between approximately 140 and 200 pounds. 
+
+
+#Exploratory analysis of EMPLOY1
+ggplot(project_data_no_outliers, aes(x = EMPLOY1)) + 
+  geom_bar() + 
+  labs(title = "EMPLOY1 Frequency")
+
+# The visualization reveals that there are responses for all the employment categories.  The 0 response representing employed for wages is the largest.  Second is the 7 value representing retired.  The 4 value, representing out of work for less than 1 year, has the least values.   
+
+
+#Exploratory analysis of HLTHPLN1
+ggplot(project_data_no_outliers, aes(x = HLTHPLN1)) + 
+  geom_bar() + 
+  labs(title = "HLTHPLN1 Frequency")
+# This visualization shows that most of the HLTHPLN1 values in the dataset are 1, indicating that the respondent had health care coverage
+
+
+
+```
+
+### Q13
+
+Run basic descriptive statistics. Be sure to address each variable. What do these statistics reveal? Be sure to comment it out.
+
+```{r}
+### Do not edit the following line. It is used by CodeGrade.
+# CG Q13 # 
+
+### TYPE YOUR CODE BELOW ###
+
+#Descriptive statistic of PHYSHLTH
+round(summary(project_data_no_outliers$PHYSHLTH),2)
+
+freq_physhlth<- table(project_data_no_outliers$PHYSHLTH)
+round(prop.table(freq_physhlth), 2)
+
+# There is a dominance of 0 value responses, indicating that a large portion of the respondents indicated they had no bad health days in the past 30 days. The minimum response is 0, the max is 30 and the mean is 4.32 and the median is 0. The number of 0 value responses suggests that it might be useful to consider looking at this variable differently. One could eliminate the 0 values and do analysis to better understand poor health. 
+# The prop_table calculations show that 63% of the values were 1.  The next highest was 30 with 8%. 
+
+```
+```{r}
+#Descriptive statistic of WEIGHT1
+summary(project_data_no_outliers$WEIGHT2)
+range(project_data_no_outliers$WEIGHT2)
+sd(project_data_no_outliers$WEIGHT2)
+IQR(project_data_no_outliers$WEIGHT2)
+
+# The summary and range indicates minimum weight is 91 and the max is 505.  
+# The median is 172 and the mean 178.2. The mean is greater than the median indicating a positive skew.  
+# A standard deviation of 45 pounds and a range of 91 to 505 pounds indicates a lot of variability in the weight variable. 
+# For future analysis it may be useful to use either height or sex to bring more detail to the weight variable.
+```
+
+
+```{r}
+#Descriptive statistic of EMPLOY1
+# This a categorical variable for employment status.  There are 8 categories. 
+
+freq_employ <- table(project_data_no_outliers$EMPLOY1)
+round(prop.table(freq_employ), 2)
+
+# Looking at the relative frequencies of the values revealed the following:
+  # 41% of the values are 1- employed for wages
+  # 30% of the values are 7 - retired.
+  # 2% of the values are 3 or 4 - out of work for > 1 year and < 1 year. 
+```
+
+
+```{r}
+#Descriptive statistic of HLTHPLN1
+# This is a binary variable with two possible values representing whether or not the respondent has healh care coverage. 
+
+freq_hlthpln <- table(project_data_no_outliers$HLTHPLN1)
+round(prop.table(freq_hlthpln), 2)
+
+# 93% of the values are 1- indicating health care coverage
+# 731% of the values are 2 - indicating no health care coverage. 
+```
+### Q14
+
+Finally, run at least 2 different, appropriate regressions predicting the variable you indicated in Q10. These regressions should use different predictor(s). Identify the best model and provide a discussion of your observations. Be sure to comment it out.
+
+
+```{r}
+### Do not edit the following line. It is used by CodeGrade.
+# CG Q14 # 
+
+### TYPE YOUR CODE BELOW ###
+
+
+### CREATE MODELS
+
+# Model 1 considered all three predictor variables (WEIGHT2, EMPLOY1, HLTHPLN1)
+model_1 <- lm(PHYSHLTH ~ WEIGHT2 + EMPLOY1 + HLTHPLN1, data = project_data_no_outliers)
+summary(model_1)
+model_1_AIC <- AIC(model_1, k = 5)
+
+# Model 2 considered one predictor variable -  WEIGHT2)
+model_2 <- lm(PHYSHLTH ~ WEIGHT2, data = project_data_no_outliers)
+summary(model_2)
+model_2_AIC <- AIC(model_2, k = 3)
+
+# Model 3 considered one predictor variable - EMPLOY1
+model_3 <- lm(PHYSHLTH ~ EMPLOY1, data = project_data_no_outliers)
+summary(model_3)
+model_3_AIC <- AIC(model_3, k = 3)
+
+# Model 4 considered one predictor variables HLTHPLN1
+model_4 <- lm(PHYSHLTH ~ HLTHPLN1, data = project_data_no_outliers)
+summary(model_4)
+model_4_AIC <- AIC(model_4, k = 3)
+```
+
+```{r}
+# Analysis of Models
+
+# All but model 4 return coefficients that are significant. 
+
+# create correlation table for 4 variables
+round(cor(project_data_no_outliers), 2)
+# The correlation table indicates that EMPLOY1 has the strongest correlation with PHYSHLTH. 
+
+# print AIC values for each model to compare
+AIC_comparison <- data.frame(model_1_AIC = model_1_AIC, model_2_AIC = model_2_AIC, model_3_AIC = model_3_AIC, model_4_AIC = model_4_AIC)
+print(AIC_comparison)
+
+#Comparing AIC for the models indicates that Model 1 which includes the three predictors (WEIGHT2, EMPLOY1, HLTHPLN1) is the best model for predicting PHYSHLTH because it has the lowest AIC.
+
+# The second best model is Model 3, that uses just EMPLOY1 to predict PHYSHLTH.  This result fits with the results in the correlation table.
+
+```
+
+```{r}
+#ADDITIONAL MODELS TO TEST EMPLOY1 with one other variable
+
+# Model 5 considered two predictor variables - EMPLOY1 and WEIGHT2
+model_5 <- lm(PHYSHLTH ~ EMPLOY1 + WEIGHT2, data = project_data_no_outliers)
+summary(model_3)
+model_5_AIC <- AIC(model_3, k = 4)
+
+# Model 6 considered two predictor variables- EMPLOY1 and HLTHPLN1
+model_6 <- lm(PHYSHLTH ~ EMPLOY1 + HLTHPLN1, data = project_data_no_outliers)
+summary(model_3)
+model_6_AIC <- AIC(model_3, k = 4)
+
+# Compare AIC for all 6 models. 
+AIC_comparison2 <- data.frame(model_1_AIC = model_1_AIC, model_2_AIC = model_2_AIC, model_3_AIC = model_3_AIC, model_4_AIC = model_4_AIC, model_5_AIC = model_5_AIC, model_6_AIC = model_6_AIC)
+print(AIC_comparison2 )
+
+# The results are the same. Model 1 is the best, then Model 3. Adding one variable to Model 3 does not improve Model 3.
+```
+
+------------------------------------------------------------------------
+
+# Before submitting to Code Grade:
+
+1)  Clear objects from your environment. Click the broom in the Environment pane in the top right. This will erase any variables (like Q1, Q2) that you've stored.
+
+2)  Rerun all your code. You can click the "Run" option above in this script pane (top right of notebook), then select "Run all". You should have all the variables stored again in the environment pane, and you should see no red error messages in the console below.
+
+3)  **Important**: You only have ONE ATTEMPT to submit Part 2 to the ACTUAL submission link! Ensure you are ready and confident in your work before submitting.
+
+------------------------------------------------------------------------
